@@ -1,5 +1,5 @@
 main: main.c stack.c base.c var.c env.c
-	gcc main.c stack.c base.c var.c env.c -o exec
+	gcc main.c stack.c base.c var.c env.c -g -o exec
 
-lexer: lexer.c stack.c
-	gcc lexer.c stack.c -o lexer
+lexer: lexer.c stack.c str.c
+	gcc lexer.c stack.c str.c -g -O0 -o lexer

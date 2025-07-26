@@ -1,6 +1,7 @@
 #include "str.h"
 #include "stack.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,9 +24,10 @@ bool my_strcmp(char* a, char* b) {
 char * my_strcopy(char* s, size_t char_count ) {
 	size_t in_size = (char_count)*sizeof(char);
 	char * out = (char*) malloc(in_size+sizeof(char));
+	if (out == NULL) {perror("failed to allocate for my_strcopy");exit(1);}
 
 	memcpy(out,s,in_size);
-	*(out+in_size) = *"\0";
+	*(out+in_size) = '\0';
 	return out;
 }
 char * my_strcopy_stack(char* in, Stack* stack) {

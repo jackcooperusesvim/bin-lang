@@ -33,18 +33,6 @@ typedef struct TokenDiscUnion {
 	void* data;
 } TokenDiscUnion;
 
-//Associated Types
-
-typedef struct TokenATString {
-	unsigned int len;
-	char* characters;
-} TokenATString;
-
-typedef struct TokenATNumber{
-	unsigned long int num;
-} TokenATid;
-
-
 char* read_file(const char* filename, size_t* out_size);
 TokenEnum read_char(char c);
 

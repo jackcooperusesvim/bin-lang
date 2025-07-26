@@ -10,6 +10,7 @@ Stack* StackNew(size_t stack_size) {
 	stack_ptr->stack_ptr = data;
 	return stack_ptr;
 }
+//BUG: DOES THIS EVEN WORK????
 void StackNewHere(size_t stack_size, Stack* stack_ptr) {
 	void * data = malloc(stack_size);
 
@@ -18,6 +19,7 @@ void StackNewHere(size_t stack_size, Stack* stack_ptr) {
 	stack_ptr->data = data;
 	stack_ptr->stack_ptr = data;
 }
+
 void StackRelease(Stack* stack) {
 	if (stack->next != NULL) {
 		StackRelease(stack->next);
@@ -42,4 +44,13 @@ void* StackPush(Stack* stack, size_t amount) {
 
 //TODO: IMPLEMENT THIS
 void StackPop(size_t stack_size) {
+}
+
+int test(void) {
+	Stack* stack_ptr = StackNew(100);
+	int* intarr = StackPush(stack_ptr, sizeof(int)*4);
+	intarr[0] = 5;
+	int* intarr2 = StackPush(stack_ptr, sizeof(int)*4);
+	intarr2[0] = 6;
+	intarr[0] = 1;
 }

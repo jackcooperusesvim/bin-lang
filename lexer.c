@@ -99,47 +99,52 @@ typedef struct TokenDiscUnion {
 void PrintTokenDiscUnion(TokenDiscUnion* tdu) {
     printf("Token: %i\n",tdu->token);
     switch (tdu->token) {
-        case Token_OpenParenthesis: printf("("); return;
-        case Token_CloseParenthesis: printf(")"); return;
-        case Token_OpenCurly: printf("{"); return;
-        case Token_CloseCurly: printf("}"); return;
-        case Token_OpenBracket: printf("["); return;
-        case Token_CloseBracket: printf("]"); return;
-        case Token_OpenAngle: printf("<"); return;
-        case Token_CloseAngle: printf(">"); return;
-        case Token_Semicolon: printf(";"); return;
-        case Token_Comma: printf(","); return;
-        case Token_Colon: printf(":"); return;
-        case Token_Hashtag: printf("#"); return;
-        case Token_Equals: printf("="); return;
-        case Token_Slash: printf("/"); return;
-        case Token_Newline: printf("NEWLINE"); return;
-        case Token_Tab: printf("TAB"); return;
-        case Token_Space: printf("SPACE"); return;
+        case Token_OpenParenthesis: printf("("); break;
+        case Token_CloseParenthesis: printf(")"); break;
+        case Token_OpenCurly: printf("{"); break;
+        case Token_CloseCurly: printf("}"); break;
+        case Token_OpenBracket: printf("["); break;
+        case Token_CloseBracket: printf("]"); break;
+        case Token_OpenAngle: printf("<"); break;
+        case Token_CloseAngle: printf(">"); break;
+        case Token_Semicolon: printf(";"); break;
+        case Token_Comma: printf(","); break;
+        case Token_Colon: printf(":"); break;
+        case Token_Hashtag: printf("#"); break;
+        case Token_Equals: printf("="); break;
+        case Token_Slash: printf("/"); break;
+        case Token_Newline: printf("NEWLINE"); break;
+        case Token_Tab: printf("TAB"); break;
+        case Token_Space: printf("SPACE"); break;
 
         // For these, printf a representative character.
         case Token_Keyword: {
             printf("Keyword");
             printf("data: %hd",*(short*) tdu->data);
+            break;
         };
 
         case Token_Identifier: {
             printf("identifier");
             printf("data: %s",(char*) tdu->data);
+            break;
         };
 
         case Token_Int: {
             printf("integer");
             printf("data: %ld",*(long*) tdu->data);
+            break;
         };
 
         case Token_Other: {
             printf("OTHER");
             printf("data: %s",(char*) tdu->data);
+            break;
         };
 
         default:
             printf("UNKNOWN");  // Unknown or unsupported token
+            break;
     }
     printf("\n");
 }
@@ -152,8 +157,8 @@ typedef struct TokenStack {
 TokenStack* TokenStackNew(size_t tokens) {
     TokenStack* ts = malloc(sizeof(TokenStack));
 
-    StackNewHere(tokens*sizeof(TokenDiscUnion),ts->token_stack);
-    StackNewHere(tokens*50,ts->data_stack);
+    ts->token_stack = StackNew(tokens*sizeof(TokenDiscUnion));
+    ts->data_stack = StackNew(tokens*50);
     return ts;
 }
 
@@ -170,11 +175,11 @@ void TokenStackRelease(TokenStack* ts) {
 }
 
 
-typedef int (*ParseFn)(char* chars,TokenStack** data);
+typedef int (*ParseFn)(char* chars,TokenStack* data);
 
 typedef struct {
     ParseFn func;
-    void* env;
+    TokenStack* t_stack;
 } ParseClosure;
  
 
@@ -188,7 +193,7 @@ int forEachLine(const char* restrict filename, ParseClosure closure) {
     size_t len = 0;
 
     while (getline(&line, &len, file) != -1) {
-        int err = closure.func(line,closure.env);
+        int err = closure.func(line,closure.t_stack);
         if (err != 0 ) {
             return err;
         }
@@ -205,13 +210,15 @@ int println(char* c) {
 }
 
 void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char, TokenStack* stack) {
-    int buf_len = 1+last_char-first_char;
+    int buf_len = last_char-first_char;
     if (first_char == -1) {return;}
 
-    TokenDiscUnion* token = StackPush(stack->token_stack,sizeof(TokenEnum));
+    TokenDiscUnion* token = StackPush(stack->token_stack,sizeof(TokenDiscUnion));
+    //printf("%p\n",token);
+    //printf("%li\n",( token - (TokenDiscUnion*) stack->token_stack->data));
     switch(token_type) {
         case Token_Letter: {
-            char* str =  my_strcopy(&buf[first_char],buf_len);
+            char* str = my_strcopy((buf)+first_char,buf_len);
             for (short i = 0; i<KEYWORD_COUNT;i++) {
                 if (my_strcmp((char*) KEYWORDS[i],str)) {
                     token->data = StackPush(stack->data_stack, sizeof(short));
@@ -231,6 +238,7 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
             token->token = Token_Identifier;
             token->data = StackPush(stack->data_stack, sizeof(long));
             *(long*)token->data = atol(str);
+            return;
         }
         case Token_Tab: {
             token->token =Token_Space;
@@ -261,31 +269,6 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
 
 }
 
-int lex_line(char* line, TokenStack** stack) {
-    size_t count = 0;
-    for (; line[count] != *"\0"; count++);
-
-    *stack = (TokenStack*) TokenStackNew(count*(sizeof(TokenDiscUnion)+sizeof(char)+20));
-
-
-    //Start Lexing
-    TokenEnum current_type = Token_Nada;
-    int token_start_ind = 0;
-    int token_last_ind=1;
-
-    for (;line[token_last_ind] != *"\0"; token_last_ind++) {
-        TokenEnum type = read_char(line[token_last_ind]);
-        if (type != current_type)  {
-            FinishToken(type, line,token_start_ind,token_last_ind,*stack);
-            token_start_ind = token_last_ind;
-            current_type = type;
-        }
-    }
-    //Lex the last token
-    FinishToken(current_type, line,token_start_ind,token_last_ind,*stack);
-    return 0;
-}
-
 void print_tokenStack(TokenStack* stack) {
     TokenDiscUnion* stack_ptr = (TokenDiscUnion*) stack->token_stack->stack_ptr;
     TokenDiscUnion* start_ptr = (TokenDiscUnion*) stack->token_stack->data;
@@ -299,13 +282,36 @@ void print_tokenStack(TokenStack* stack) {
     }
 }
 
+int lex_line(char* line, TokenStack* stack) {
+    size_t count = 0;
+    for (; line[count] != *"\0"; count++);
+
+    //Start Lexing
+    TokenEnum current_type = read_char(line[0]);
+
+    int token_start_ind = 0;
+    int token_last_ind=1;
+
+    for (;line[token_last_ind] != *"\0"; token_last_ind++) {
+        TokenEnum type = read_char(line[token_last_ind]);
+        if (type != current_type)  {
+            // printf("%s\n",(line+token_start_ind));
+            FinishToken(current_type, line,token_start_ind,token_last_ind,stack);
+            token_start_ind = token_last_ind;
+            current_type = type;
+        }
+    }
+    //Lex the last token
+    FinishToken(current_type, line,token_start_ind,token_last_ind,stack);
+
+    return 0;
+}
+
 int main(void) {
 
-    TokenStack ** tokenstack_mut_ptr = NULL;
-#define MAKE_CLOSURE(fn, ctx) ((ParseClosure){ .func = fn, .env = ctx })
-    ParseClosure c = {.func = lex_line, .env = *tokenstack_mut_ptr};
+    TokenStack * tokenstack_ptr = TokenStackNew(5000000);
+    ParseClosure c = {.func = lex_line, .t_stack = tokenstack_ptr};
 
     forEachLine("input_file.comb",c);
-    print_tokenStack(*tokenstack_mut_ptr);
-    TokenStackRelease(*tokenstack_mut_ptr);
+    TokenStackRelease(tokenstack_ptr);
 }

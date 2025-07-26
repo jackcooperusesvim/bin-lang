@@ -2,6 +2,8 @@
 #ifndef LEXER_H
 
 #include <stdio.h>
+#include "stack.h"
+#include "str.h"
 
 extern typedef short TokenEnum;
 

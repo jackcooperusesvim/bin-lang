@@ -1,4 +1,5 @@
 #include "str.h"
+#include "stack.h"
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -25,5 +26,12 @@ char * my_strcopy(char* s, size_t char_count ) {
 
 	memcpy(out,s,in_size);
 	*(out+in_size) = *"\0";
+	return out;
+}
+char * my_strcopy_stack(char* in, Stack* stack) {
+	size_t size = my_strlen(in);
+	char* out = StackPush(stack, sizeof(char)*(my_strlen(in)+1));
+	memcpy(out,in,size);
+	*(out+size) = *"\0";
 	return out;
 }

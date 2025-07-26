@@ -97,53 +97,52 @@ typedef struct TokenDiscUnion {
 } TokenDiscUnion;
 
 void PrintTokenDiscUnion(TokenDiscUnion* tdu) {
-    printf("Token: %i\n",tdu->token);
     switch (tdu->token) {
-        case Token_OpenParenthesis: printf("("); break;
-        case Token_CloseParenthesis: printf(")"); break;
-        case Token_OpenCurly: printf("{"); break;
-        case Token_CloseCurly: printf("}"); break;
-        case Token_OpenBracket: printf("["); break;
-        case Token_CloseBracket: printf("]"); break;
-        case Token_OpenAngle: printf("<"); break;
-        case Token_CloseAngle: printf(">"); break;
-        case Token_Semicolon: printf(";"); break;
-        case Token_Comma: printf(","); break;
-        case Token_Colon: printf(":"); break;
-        case Token_Hashtag: printf("#"); break;
-        case Token_Equals: printf("="); break;
-        case Token_Slash: printf("/"); break;
-        case Token_Newline: printf("NEWLINE"); break;
-        case Token_Tab: printf("TAB"); break;
-        case Token_Space: printf("SPACE"); break;
+        case Token_OpenParenthesis: printf("(\n"); break;
+        case Token_CloseParenthesis: printf(")\n"); break;
+        case Token_OpenCurly: printf("{\n"); break;
+        case Token_CloseCurly: printf("}\n"); break;
+        case Token_OpenBracket: printf("[\n"); break;
+        case Token_CloseBracket: printf("]\n"); break;
+        case Token_OpenAngle: printf("<\n"); break;
+        case Token_CloseAngle: printf(">\n"); break;
+        case Token_Semicolon: printf(";\n"); break;
+        case Token_Comma: printf(",\n"); break;
+        case Token_Colon: printf(":\n"); break;
+        case Token_Hashtag: printf("#\n"); break;
+        case Token_Equals: printf("=\n"); break;
+        case Token_Slash: printf("/\n"); break;
+        case Token_Newline: printf("NEWLINE\n"); break;
+        case Token_Tab: printf("TAB\n"); break;
+        case Token_Space: printf("SPACE\n"); break;
 
         // For these, printf a representative character.
         case Token_Keyword: {
-            printf("Keyword");
-            printf("data: %hd",*(short*) tdu->data);
+            printf("Keyword\n");
+            printf("\tdata: %hd",*(short*) tdu->data);
             break;
         };
 
         case Token_Identifier: {
-            printf("identifier");
-            printf("data: %s",(char*) tdu->data);
+            printf("Identifier\n");
+            printf("\tdata: %s",(char*) tdu->data);
             break;
         };
 
         case Token_Int: {
-            printf("integer");
-            printf("data: %ld",*(long*) tdu->data);
+            printf("Integer\n");
+            printf("\tdata: %ld",*(long*) tdu->data);
             break;
         };
 
         case Token_Other: {
-            printf("OTHER");
-            printf("data: %s",(char*) tdu->data);
+            printf("Other\n");
+            printf("\tdata: %s",(char*) tdu->data);
             break;
         };
 
         default:
-            printf("UNKNOWN");  // Unknown or unsupported token
+            printf("Unknown");  // Unknown or unsupported token
             break;
     }
     printf("\n");
@@ -275,7 +274,7 @@ void print_tokenStack(TokenStack* stack) {
 
     ptrdiff_t num_tokens = stack_ptr-start_ptr;
     for (int i = 0; i<num_tokens;i++) {
-        PrintTokenDiscUnion((TokenDiscUnion*)start_ptr);
+        PrintTokenDiscUnion((TokenDiscUnion*)&start_ptr[i]);
     }
     if (stack->token_stack->next != NULL) {
         print_tokenStack(stack);
@@ -313,5 +312,6 @@ int main(void) {
     ParseClosure c = {.func = lex_line, .t_stack = tokenstack_ptr};
 
     forEachLine("input_file.comb",c);
+    print_tokenStack(tokenstack_ptr);
     TokenStackRelease(tokenstack_ptr);
 }

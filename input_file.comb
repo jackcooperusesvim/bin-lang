@@ -1,0 +1,10 @@
+Nand<x> = Not<And<x>>
+
+Xor<x:1> = And<Or<x>,Not<And<x>>>
+
+Boom<x:4> = And<Or<x[:2]>,Not<And<x[2:]>>
+
+let x = exec(Boom<1,0,0,1>)
+
+print()
+

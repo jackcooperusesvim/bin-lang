@@ -22,7 +22,7 @@ typedef short TokenEnum;
 //Data: char*
 #define Token_Identifier 1 
 //Data: long
-#define Token_Int 2 
+#define Token_Int 2
 
 //Single Character Tokens
 #define Token_CloseParenthesis (TokenEnum) 3
@@ -213,11 +213,12 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
     if (first_char == -1) {return;}
 
     TokenDiscUnion* token = StackPush(stack->token_stack,sizeof(TokenDiscUnion));
-    //printf("%p\n",token);
-    //printf("%li\n",( token - (TokenDiscUnion*) stack->token_stack->data));
+    printf("%p\n",token);
+    printf("%li\n",( token - (TokenDiscUnion*) stack->token_stack->data));
     switch(token_type) {
         case Token_Letter: {
             char* str = my_strcopy((buf)+first_char,buf_len);
+            //Check if the letter is a keyword
             for (short i = 0; i<KEYWORD_COUNT;i++) {
                 if (my_strcmp((char*) KEYWORDS[i],str)) {
                     token->data = StackPush(stack->data_stack, sizeof(short));
@@ -233,18 +234,19 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
             return;
         }
         case Token_Int: {
-            char* str =  my_strcopy(&buf[first_char],buf_len);
-            token->token = Token_Identifier;
+            char* str =  my_strcopy(buf+first_char,buf_len);
+            token->token = Token_Int;
             token->data = StackPush(stack->data_stack, sizeof(long));
             *(long*)token->data = atol(str);
+            free(str);
             return;
         }
         case Token_Tab: {
-            token->token =Token_Space;
+            token->token = Token_Space;
             return;
         }
         case Token_Space: {
-            token->token =Token_Space;
+            token->token = Token_Space;
             return;
         }
         case Token_Other: {
@@ -253,8 +255,7 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
             token->token = Token_Other;
         }
         case Token_Null_Terminator: {
-            perror("FinishToken should never recieve a null terminator");
-            exit(1);
+            token->token = Token_Space;
             return;
         }
         default: {

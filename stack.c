@@ -46,11 +46,11 @@ void* StackPush(Stack* stack, size_t amount) {
 void StackPop(size_t stack_size) {
 }
 
-int test(void) {
-	Stack* stack_ptr = StackNew(100);
-	int* intarr = StackPush(stack_ptr, sizeof(int)*4);
-	intarr[0] = 5;
-	int* intarr2 = StackPush(stack_ptr, sizeof(int)*4);
-	intarr2[0] = 6;
-	intarr[0] = 1;
-}
+// int main(void) {
+// 	Stack* stack_ptr = StackNew(100);
+// 	int* intarr = StackPush(stack_ptr, sizeof(int)*4);
+// 	intarr[0] = 5;
+// 	int* intarr2 = StackPush(stack_ptr, sizeof(int)*4);
+// 	intarr2[0] = 6;
+// 	intarr[0] = 1;
+// }

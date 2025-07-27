@@ -7,14 +7,14 @@
 
 unsigned int my_strlen(char* s) {
 	unsigned int count = 0;
-	for(;s[count]!=*"\0";s++);
+	for(;s[count]!='\0';count++);
 	return count;
 }
 
 //Optimize
 bool my_strcmp(char* a, char* b) {
 	unsigned int len_one = my_strlen(a);
-	if (len_one == my_strlen(b)) {return false;}
+	if (len_one != my_strlen(b)) {return false;}
 	for (int i = 0; i<len_one; i++) {
 		if (b[i] != a[i]) {return false;}
 	}
@@ -22,18 +22,17 @@ bool my_strcmp(char* a, char* b) {
 }
 
 char * my_strcopy(char* s, size_t char_count ) {
-	size_t in_size = (char_count)*sizeof(char);
-	char * out = (char*) malloc(in_size+sizeof(char));
+	char * out = (char*) malloc(char_count+1);
 	if (out == NULL) {perror("failed to allocate for my_strcopy");exit(1);}
 
-	memcpy(out,s,in_size);
-	*(out+in_size) = '\0';
+	memcpy(out,s,char_count+1);
+	*(out+char_count) = '\0';
 	return out;
 }
 char * my_strcopy_stack(char* in, Stack* stack) {
 	size_t size = my_strlen(in);
-	char* out = StackPush(stack, sizeof(char)*(my_strlen(in)+1));
-	memcpy(out,in,size);
-	*(out+size) = *"\0";
+	char* out = StackPush(stack, size+1);
+	memcpy(out,in,size+1);
+	*(out+size) = '\0';
 	return out;
 }

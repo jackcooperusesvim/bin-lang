@@ -265,7 +265,7 @@ TokenStack* lex_file(const char* file,unsigned long token_count) {
     return tokenstack_ptr;
 }
 
-int main(void) {
+int test(void) {
     printf("lexing...\n");
     TokenStack* ts = lex_file("input_file.comb", 5000000);
     printf("printing...\n");

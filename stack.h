@@ -27,7 +27,6 @@ void* StackGetUniform(Stack* stack, size_t obj_size, unsigned int index);
 
 Stack* BlockStackNew(size_t stack_size, size_t obj_size);
 void* BlockStackPush(Stack* stack);
-void* BlockStackGetIndPtr(Stack* stack, unsigned int index);
 int BlockStackPop(Stack* stack);
 void* BlockStackGetIndPtr(Stack* stack, unsigned int index);
 unsigned int BlockStackSpaceDataAfter(Stack* stack, void* start);

@@ -9,8 +9,8 @@
 #define KEYWORD_COUNT 2
 
 typedef short KeywordEnum;
-const KeywordEnum Keyword_Comp = 0;
-const KeywordEnum Keyword_Print = 1;
+#define Keyword_Comp 0
+#define Keyword_Print 1
 
 typedef short TokenEnum;
 
@@ -48,7 +48,7 @@ typedef short TokenEnum;
 #define Token_Null_Terminator (TokenEnum) 17
 #define Token_Newline (TokenEnum) 15
 #define Token_Tab (TokenEnum) 16
-#define Token_Nada (TokenEnum) -1
+#define Token_Nada (TokenEnum) 21
 
 //Data: char*
 #define Token_Other (TokenEnum) 12 
@@ -85,4 +85,7 @@ typedef struct {
 } LexClosure;
 void PrintTokenDiscUnion(TokenDiscUnion* tdu);
 
+void print_tokenStack(TokenStack* stack);
+
+int test(void);
 #endif

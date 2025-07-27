@@ -26,11 +26,15 @@ Stack* BlockStackNew(size_t stack_size, size_t obj_size) {
 }
 
 void* BlockStackGetIndPtr(Stack* stack, unsigned int index) {
-	unsigned int count = StackCountUniform(stack, false);
+	unsigned int count = (stack->stack_ptr-stack->data)/stack->opt_obj_size;
 	if (count>index) {
 		return stack->data+(stack->opt_obj_size*index);
 	}
-	return BlockStackGetIndPtr(stack, index-count);
+	if (stack->next != NULL) {
+		return BlockStackGetIndPtr(stack->next, index-count);
+	} else {
+		return NULL;
+	}
 }
 
 //BUG: DOES THIS EVEN WORK????
@@ -130,11 +134,11 @@ int StackPop(Stack* stack, size_t amount) {
 	}
 }
 
-// int main(void) {
-// 	Stack* stack_ptr = StackNew(100);
-// 	int* intarr = StackPush(stack_ptr, sizeof(int)*4);
-// 	intarr[0] = 5;
-// 	int* intarr2 = StackPush(stack_ptr, sizeof(int)*4);
-// 	intarr2[0] = 6;
-// 	intarr[0] = 1;
-// }
+int stack_test(void) {
+	Stack* stack_ptr = StackNew(100);
+	int* intarr = StackPush(stack_ptr, sizeof(int)*4);
+	intarr[0] = 5;
+	int* intarr2 = StackPush(stack_ptr, sizeof(int)*4);
+	intarr2[0] = 6;
+	intarr[0] = 1;
+}

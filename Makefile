@@ -3,3 +3,6 @@ main: main.c stack.c base.c var.c env.c
 
 lexer: lexer.c stack.c str.c
 	gcc lexer.c stack.c str.c -g -O0 -o lexer
+
+parser: parser.c stack.c str.c lexer.c
+	gcc parser.c lexer.c stack.c str.c -g -O0 -o parser

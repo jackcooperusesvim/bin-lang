@@ -1,3 +1,0 @@
-Nand(x) = Not(And(x))
-Xor(x) = And(Or(x),Not(And(x))
-Boom = 4x

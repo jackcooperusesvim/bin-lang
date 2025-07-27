@@ -7,46 +7,11 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define KEYWORD_COUNT 1
-const char* KEYWORDS[KEYWORD_COUNT] =  {"let"};
+const char* KEYWORDS[KEYWORD_COUNT] =  {"comp","print"};
 
-typedef short KeywordEnum;
-const KeywordEnum Keyword_Let = 0;
 
 
 typedef short TokenEnum;
-
-//Character Tokens With Data
-//Data: short
-#define Token_Keyword 0 
-//Data: char*
-#define Token_Identifier 1 
-//Data: long
-#define Token_Int 2
-
-//Single Character Tokens
-#define Token_CloseParenthesis (TokenEnum) 3
-#define Token_OpenParenthesis (TokenEnum) -3
-#define Token_CloseBracket (TokenEnum) 4
-#define Token_OpenBracket (TokenEnum) -4
-#define Token_CloseAngle (TokenEnum) 5
-#define Token_OpenAngle (TokenEnum) -5
-#define Token_Semicolon (TokenEnum) 6
-#define Token_Comma (TokenEnum) 7
-#define Token_Colon (TokenEnum) 8
-#define Token_Hashtag (TokenEnum) 9
-#define Token_Equals (TokenEnum) 10
-#define Token_Space (TokenEnum) 11
-//Data: char*
-#define Token_Other (TokenEnum) 12 
-#define Token_Slash (TokenEnum) 13
-#define Token_Letter (TokenEnum) 14
-#define Token_Newline (TokenEnum) 15
-#define Token_Tab (TokenEnum) 16
-#define Token_Null_Terminator (TokenEnum) 17
-#define Token_CloseCurly (TokenEnum) -18
-#define Token_OpenCurly (TokenEnum) 18
-#define Token_Nada (TokenEnum) -1
 
 
 TokenEnum read_char(char c) {
@@ -54,6 +19,7 @@ TokenEnum read_char(char c) {
         case '(': return Token_OpenParenthesis;
         case ')': return Token_CloseParenthesis;
         case '{': return Token_OpenCurly;
+        case '^': return Token_Carrot;
         case '}': return Token_CloseCurly;
         case '[': return Token_OpenBracket;
         case ']': return Token_CloseBracket;
@@ -61,10 +27,12 @@ TokenEnum read_char(char c) {
         case '>': return Token_CloseAngle;
         case ';': return Token_Semicolon;
         case ',': return Token_Comma;
+        case '.': return Token_Period;
         case ':': return Token_Colon;
         case '#': return Token_Hashtag;
         case '=': return Token_Equals;
         case '/': return Token_Slash;
+
         case '\n': return Token_Newline;
         case '\t': return Token_Tab;
         case ' ': return Token_Space;
@@ -91,11 +59,6 @@ TokenEnum read_char(char c) {
     }
 }
 
-typedef struct TokenDiscUnion {
-	TokenEnum token;
-	void* data;
-} TokenDiscUnion;
-
 void PrintTokenDiscUnion(TokenDiscUnion* tdu) {
     switch (tdu->token) {
         case Token_OpenParenthesis: printf("(\n"); break;
@@ -105,9 +68,11 @@ void PrintTokenDiscUnion(TokenDiscUnion* tdu) {
         case Token_OpenBracket: printf("[\n"); break;
         case Token_CloseBracket: printf("]\n"); break;
         case Token_OpenAngle: printf("<\n"); break;
+        case Token_Carrot: printf("^\n"); break;
         case Token_CloseAngle: printf(">\n"); break;
         case Token_Semicolon: printf(";\n"); break;
         case Token_Comma: printf(",\n"); break;
+        case Token_Period: printf(".\n"); break;
         case Token_Colon: printf(":\n"); break;
         case Token_Hashtag: printf("#\n"); break;
         case Token_Equals: printf("=\n"); break;
@@ -148,21 +113,17 @@ void PrintTokenDiscUnion(TokenDiscUnion* tdu) {
     printf("\n");
 }
 
-typedef struct TokenStack {
-    Stack* token_stack;
-    Stack* data_stack;
-} TokenStack;
 
 TokenStack* TokenStackNew(size_t tokens) {
     TokenStack* ts = malloc(sizeof(TokenStack));
 
-    ts->token_stack = StackNew(tokens*sizeof(TokenDiscUnion));
+    ts->token_stack = BlockStackNew(tokens,sizeof(TokenDiscUnion));
     ts->data_stack = StackNew(tokens*50);
     return ts;
 }
 
 TokenDiscUnion* TokenStackPush(TokenEnum token_type, size_t len,TokenStack* ts) {
-    TokenDiscUnion* token = StackPush(ts->token_stack, sizeof(TokenDiscUnion));
+    TokenDiscUnion* token = BlockStackPush(ts->token_stack);
     char* str = StackPush(ts->data_stack, len);
     token->data = str;
     return token;
@@ -174,15 +135,7 @@ void TokenStackRelease(TokenStack* ts) {
 }
 
 
-typedef int (*ParseFn)(char* chars,TokenStack* data);
-
-typedef struct {
-    ParseFn func;
-    TokenStack* t_stack;
-} ParseClosure;
- 
-
-int forEachLine(const char* restrict filename, ParseClosure closure) {
+int forEachLine(const char* restrict filename, LexClosure closure) {
     FILE * file = fopen("input_file.comb", "r");
     if (!file) {
         perror("fopen");
@@ -212,7 +165,7 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
     int buf_len = last_char-first_char;
     if (first_char == -1) {return;}
 
-    TokenDiscUnion* token = StackPush(stack->token_stack,sizeof(TokenDiscUnion));
+    TokenDiscUnion* token = BlockStackPush(stack->token_stack);
     // printf("%p\n",token);
     // printf("%li\n",( token - (TokenDiscUnion*) stack->token_stack->data));
     switch(token_type) {
@@ -241,12 +194,14 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
             free(str);
             return;
         }
-        case Token_Tab: {
-            token->token = Token_Space;
-            return;
-        }
+        case Token_Tab:
+        case Token_Newline:
+        case Token_Null_Terminator:
         case Token_Space: {
-            token->token = Token_Space;
+            if (BlockStackPop(stack->token_stack) != 0) {
+                perror("Last Stack Doesn't have that a full block allocated");
+                exit(1);
+            }
             return;
         }
         case Token_Other: {
@@ -254,14 +209,10 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
             token->data = my_strcopy_stack(str, stack->data_stack);
             token->token = Token_Other;
         }
-        case Token_Null_Terminator: {
-            token->token = Token_Space;
-            return;
-        }
         default: {
             token->token = token_type;
             for (int i = buf_len-1;i>0;i--) {
-                TokenDiscUnion * token_ptr = StackPush(stack->token_stack, sizeof(TokenDiscUnion));
+                TokenDiscUnion * token_ptr = BlockStackPush(stack->token_stack);
                 token_ptr->token = token_type;
             }
         }
@@ -307,12 +258,17 @@ int lex_line(char* line, TokenStack* stack) {
     return 0;
 }
 
-int main(void) {
-
-    TokenStack * tokenstack_ptr = TokenStackNew(5000000);
-    ParseClosure c = {.func = lex_line, .t_stack = tokenstack_ptr};
-
+TokenStack* lex_file(const char* file,unsigned long token_count) {
+    TokenStack * tokenstack_ptr = TokenStackNew(token_count);
+    LexClosure c = {.func = lex_line, .t_stack = tokenstack_ptr};
     forEachLine("input_file.comb",c);
-    print_tokenStack(tokenstack_ptr);
-    TokenStackRelease(tokenstack_ptr);
+    return tokenstack_ptr;
+}
+
+int main(void) {
+    printf("lexing...\n");
+    TokenStack* ts = lex_file("input_file.comb", 5000000);
+    printf("printing...\n");
+    print_tokenStack(ts);
+    TokenStackRelease(ts);
 }

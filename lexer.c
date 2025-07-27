@@ -213,8 +213,8 @@ void FinishToken(TokenEnum token_type, char* buf, int first_char, int last_char,
     if (first_char == -1) {return;}
 
     TokenDiscUnion* token = StackPush(stack->token_stack,sizeof(TokenDiscUnion));
-    printf("%p\n",token);
-    printf("%li\n",( token - (TokenDiscUnion*) stack->token_stack->data));
+    // printf("%p\n",token);
+    // printf("%li\n",( token - (TokenDiscUnion*) stack->token_stack->data));
     switch(token_type) {
         case Token_Letter: {
             char* str = my_strcopy((buf)+first_char,buf_len);

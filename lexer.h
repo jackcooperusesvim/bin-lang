@@ -6,11 +6,13 @@
 #include "str.h"
 
 
-#define KEYWORD_COUNT 2
+#define KEYWORD_COUNT 4
 
 typedef short KeywordEnum;
 #define Keyword_Comp 0
 #define Keyword_Print 1
+#define Keyword_True 2
+#define Keyword_False 3
 
 typedef short TokenEnum;
 

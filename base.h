@@ -3,18 +3,19 @@
 
 #include <stdbool.h>
 #include "stack.h"
-typedef struct WireArr {
+//uses way too much memory
+typedef struct DataCable {
 	int count;
 	bool * values;
-} WireArr;
+} Cable;
 
-typedef WireArr (*WireArrFn ) (Stack, WireArr) ;
+typedef Cable (*WireArrFn ) (Stack, Cable) ;
 
-WireArr AllocateWireArr(Stack* stack, int wire_count);
-WireArr Group(Stack* stack,WireArr in);
-WireArr Or(Stack* stack,WireArr in);
-WireArr And(Stack* stack,WireArr in);
-WireArr Not(Stack* stack,WireArr in);
+Cable AllocateWireArr(Stack* stack, int wire_count);
+Cable Group(Stack* stack,Cable* cables);
+Cable Or(Stack* stack,Cable in);
+Cable And(Stack* stack,Cable in);
+Cable Not(Stack* stack,Cable in);
 
 #endif
 

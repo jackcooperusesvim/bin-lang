@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-const char* KEYWORDS[KEYWORD_COUNT] =  {"comp","print"};
+const char* KEYWORDS[KEYWORD_COUNT] =  {"comp","print","T","F"};
 
 
 

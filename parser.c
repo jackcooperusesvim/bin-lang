@@ -20,7 +20,7 @@ InstrStack* InstrStackNew(size_t token_count) {
 	instr_stack->instructions = BlockStackNew(cnt,sizeof(TopLvlInstrDiscUnion));
 	instr_stack->comp_decls = BlockStackNew(cnt,sizeof(CompDecl));
 	instr_stack->comp_args = BlockStackNew(cnt,sizeof(CompArg));
-	instr_stack->evals = BlockStackNew(cnt,sizeof(Eval));
+	instr_stack->evals = BlockStackNew(cnt,sizeof(EvalDecl));
 	instr_stack->union_arg_in_decls = BlockStackNew(cnt,sizeof(DiscUnionArgIn));
 
 	return instr_stack;
@@ -72,16 +72,87 @@ bool tokens_match(TokenStack* token_stack, unsigned int* index, int token_cnt, T
 
 //UNFINISHED PARSING FUNCTIONS
 PARSE_FUNC(ParsedList,parseListEval) {
-
+    while(true) {
+    }
 }
+PARSE_FUNC(DiscUnionArgIn*,parseDiscUnionArgIn) {
+    ParsedList out;
+    DiscUnionArgIn* arg = BlockStackPush(instr_stack->union_arg_in_decls);
+    out.data = arg;
+    while(true) {
+	unsigned int index_cpy = *index;
+	if(tokens_match(token_stack, &index_cpy, 2, (TokenEnum[]){Token_Identifier,Token_OpenAngle})) {
+	    arg->type = ArgIn_Eval;
+	    arg->data = (UnionArgIn) parseEval(token_stack, instr_stack, index);
+	}
+	TokenDiscUnion* token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+	if (token->token == Token_Keyword) {
+	    arg->type = ArgIn_ArgValue;
+	    TokenEnum tenum = *(TokenEnum*)token->data;
+	    if (tenum == Keyword_True) {
+		arg->data = (UnionArgIn) (bool) true;
+	    } else if (tenum == Keyword_False) {
+		arg->data = (UnionArgIn) (bool) false;
+	    }
+	} else if (token->token == Token_Identifier){
+	    arg->type = ArgIn_ArgReference;
+	    UnionArgIn comp_arg = (UnionArgIn) (CompArg*) BlockStackPush(instr_stack->comp_args);
+	    comp_arg.comp_arg->ident = (char*) token->data;
+	    if (tokens_match(token_stack,index,1,(TokenEnum[]){Token_Period})) {
+		long* val = (long*) token_take_and_advance(token_stack, index, Token_Int);
+		if (val != NULL) { comp_arg.comp_arg->wire_count = *val; }
+		if (tokens_match(token_stack,index,2,(TokenEnum[]){Token_Period,Token_Period})) { 
+		    long* val = (long*) token_take_and_advance(token_stack, index, Token_Int);
+		    if (val != NULL) { comp_arg.comp_arg->range_end= *val; }
+		}
+	    } else {
+		comp_arg.comp_arg->wire_count = 0;
+	    }
+	    arg->data =  comp_arg;
+	}
+
+    }
+}
+
+PARSE_FUNC(EvalDecl*,parseEval) {
+    EvalDecl* out = BlockStackPush(instr_stack->evals);
+    out->ident = (char*) token_take_and_advance(token_stack, index, Token_Identifier);
+
+    if (out->ident == NULL) {
+	perror("Expecting evaluation");
+	exit(1);
+    }
+    if (!tokens_match(token_stack, index, 1, (TokenEnum[]){Token_OpenAngle})) {
+	perror("idk, man");
+	exit(1);
+    }
+ 
+    out->args = BlockStackPush(instr_stack->union_arg_in_decls);
+    while (true) {
+	if (tokens_match(token_stack, index, 1, (TokenEnum[]){Token_CloseAngle})) {
+	    break;
+	}
+	out->arg_count++;
+	parseDiscUnionArgIn(token_stack, instr_stack, index);
+    }
+    return out;
+}
+
 PARSE_FUNC(ParsedList,parseListCompDecl) {
     ParsedList out;
+    CompDecl* comp_decl = BlockStackPush(instr_stack->comp_decls);
+    out.data = comp_decl;
     while (true) {
-	 KeywordEnum* data_ptr = (KeywordEnum*) token_take_and_advance(token_stack, index, Token_Keyword);
+	CompDecl* comp_decl = BlockStackPush(instr_stack->comp_decls);
+
+	KeywordEnum* data_ptr = (KeywordEnum*) token_take_and_advance(token_stack, index, Token_Keyword);
 	if (data_ptr == Keyword_Comp) {
-	    parseCompDecl(token_stack, instr_stack, index);
+		out.count++;
+		comp_decl= parseCompDecl(token_stack, instr_stack, index);
 	} else {break;}
+	comp_decl = BlockStackPush(instr_stack->comp_decls);
     }
+    return out;
 }
 
 void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out) {
@@ -222,7 +293,7 @@ PARSE_FUNC(CompDecl*,parseCompDecl) {
     out->sub_decls = (CompDecl*) evals.data;
 
     out->eval_count = evals.count;
-    out->evals = (Eval*) evals.data;
+    out->evals = (EvalDecl*) evals.data;
 
     if (!tokens_match(token_stack, index, 1, (TokenEnum[]){Token_CloseCurly} )) {
 	perror("Component declaration must end with a '}' ");
@@ -232,7 +303,7 @@ PARSE_FUNC(CompDecl*,parseCompDecl) {
     return out;
 }
 
-PARSE_FUNC(TopLvlInstrDiscUnion*,parseTopLevel) {
+PARSE_FUNC(void,parseTopLevel) {
 
     TokenDiscUnion* first_token = BlockStackGetIndPtr(token_stack->token_stack,*index);
     TopLvlInstrDiscUnion* out = BlockStackPush(instr_stack->instructions);
@@ -249,6 +320,7 @@ PARSE_FUNC(TopLvlInstrDiscUnion*,parseTopLevel) {
 		}
 		case Keyword_Print : {
 		    out->type = Instr_Print;
+		    (*index)++;
 		    break;
 		}
 		default: {
@@ -261,11 +333,27 @@ PARSE_FUNC(TopLvlInstrDiscUnion*,parseTopLevel) {
 	}
 	case Token_Identifier : {
 	    out->type = Instr_Eval;
-	    Eval* eval = parseEval(token_stack,instr_stack,index);
-	    out->instr = (InstrPtr) (Eval*) eval;
+	    EvalDecl* eval = parseEval(token_stack,instr_stack,index);
+	    out->instr = (InstrPtr) (EvalDecl*) eval;
 	}
     }
-    return out;
+}
+
+void parse(TokenStack *token_stack, InstrStack *instr_stack) {
+    unsigned int index = 0;
+    while (true) {
+	parseTopLevel(token_stack, instr_stack, &index);
+    }
+}
+
+
+void print_InstrStack(InstrStack* instr_stack) {
+    unsigned int num_instr = BlockStackCount(instr_stack->instructions, true);
+    for (unsigned int i = 0;i<num_instr) {
+	TopLvlInstrDiscUnion* instr = BlockStackGetIndPtr(instr_stack->instructions,true);
+    }
+
+    instr_stack->instructions
 }
 
 int main(void) {
@@ -274,9 +362,7 @@ int main(void) {
     // print_tokenStack(token_stack);
     InstrStack* instr_stack = InstrStackNew(BlockStackCount(token_stack->token_stack,true));
 
-    parseTopLevel(token_stack, instr_stack, 0);
-
-    TokenStackRelease(token_stack);
+    parse(token_stack, instr_stack, 0);
 
     InstrStackRelease(instr_stack);
 }

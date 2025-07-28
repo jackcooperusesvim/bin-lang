@@ -25,20 +25,21 @@ typedef struct ComponentDeclaration CompDecl;
 //wire_count of 0 means variadic
 typedef struct ComponentArgument {
 	char* ident;
-	unsigned int wire_count;
+	unsigned int wire_count; //Also range_start
+	unsigned int range_end;
 	
 	//For function arguments
 	unsigned int arg_count;
 	struct ComponentArgument* args;
 } CompArg;
 
-typedef struct Evaluation {
-	char* component_identifier;
+typedef struct EvaluationDecl {
+	char* ident;
 
 	unsigned int arg_count;
 	DiscUnionArgIn* args;
 
-} Eval;
+} EvalDecl;
 
 //is_print discriminates between a print statment (which contains no more data
 typedef struct ComponentDeclaration {
@@ -51,13 +52,13 @@ typedef struct ComponentDeclaration {
 	CompDecl* sub_decls;
 
 	unsigned int eval_count;
-	Eval* evals;
+	EvalDecl* evals;
 
 } CompDecl;
 
 typedef union InstructionPtr {
 	CompDecl* comp_arg;
-	Eval* eval;
+	EvalDecl* eval;
 } InstrPtr;
 
 //instr can be 
@@ -68,7 +69,7 @@ typedef struct TopLevelInstruction {
 
 typedef union ArgumentIn {
 	CompArg* comp_arg;
-	Eval* eval;
+	EvalDecl* eval;
 	bool raw_value;
 } UnionArgIn;
 
@@ -100,9 +101,10 @@ typedef struct ParseClosure{
     InstrStack* t_stack;
 } ParseClosure;
 
+PARSE_FUNC(void,parseTopLevel);
 PARSE_FUNC(ParsedList, parseListCompArg);
-PARSE_FUNC(TopLvlInstrDiscUnion*,parseTopLevel);
 PARSE_FUNC(CompDecl*,parseCompDecl);
+PARSE_FUNC(EvalDecl*,parseEval);
 void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out);
 
 #endif 

@@ -6,7 +6,7 @@ comp Enc<i:4>{
 	Or<i>
 }
 
-comp Dec<x:2,e>{
+comp Dec<comp b<a:4>{0} x:2, e>{
 	comp ne {Not<e>}
 	comp nx {Not<x>}
 
@@ -15,6 +15,7 @@ comp Dec<x:2,e>{
 	Nand<ne, x.1, nx.0>
 	Nand<ne>
 }
+
 comp Dec<x:2,e>{
 	comp ne {Not<e>}
 	comp nx {Not<x>}

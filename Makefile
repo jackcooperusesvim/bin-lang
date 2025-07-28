@@ -6,3 +6,6 @@ lexer: lexer_test.c lexer.c stack.c str.c
 
 parser: parser.c stack.c str.c lexer.c
 	gcc parser.c lexer.c stack.c str.c -g -O0 -o parser
+
+interpreter: interpreter.c stack.c str.c lexer.c
+	gcc interpreter.c lexer.c stack.c str.c -g -O0 -o interpreter

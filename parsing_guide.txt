@@ -16,10 +16,17 @@ EvalDecl = ID "<" * UnionArgIn ">"
 	  ArgIn_Eval ArgIn_Value  ArgIn_ArgReference
 DiscUnionArgin = (EVAL | VALUE | ARG_REFERENCE) //Also
 
-ARG_REFERENCE (CompArg) = ID | (ID "." WIRECOUNT)
 
 VALUE = "T" | "F"
 
-*ComponentArgument = ARG ARG ... ARG
 
+
+_______________________________________________________________________________________________
+_______________________________________________________________________________________________
+-----------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------
+
+ARG_REFERENCE (CompArg) = ID | (ID "." WIRECOUNT)
+*ComponentArgument = ARG ARG ... ARG 
+                      ^               |
 ARG = ID:WIRECOUNT

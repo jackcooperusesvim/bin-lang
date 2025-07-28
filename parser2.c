@@ -21,22 +21,22 @@
 // void print_DiscUnionArgIn(DiscUnionArgIn* argin);
 // void print_TopLvlInstrDiscUnion(TopLvlInstrDiscUnion* top);
 //
-// void print_CompArg(CompArg* arg) {
-//     if (!arg) {
-//         printf("CompArg: NULL\n");
-//         return;
-//     }
-//     printf("CompArg {\n");
-//     printf("  ident: %s\n", arg->ident);
-//     printf("  wire_count: %u\n", arg->wire_count);
-//     printf("  range_end: %u\n", arg->range_end);
-//     printf("  arg_count: %u\n", arg->arg_count);
-//     for (unsigned int i = 0; i < arg->arg_count; ++i) {
-//         printf("  args[%u]:\n", i);
-//         print_CompArg(&arg->args[i]);
-//     }
-//     printf("}\n");
-// }
+void print_CompArg(CompArg* arg) {
+    if (!arg) {
+        printf("CompArg: NULL\n");
+        return;
+    }
+    printf("CompArg {\n");
+    printf("  ident: %s\n", arg->ident);
+    printf("  wire_count: %u\n", arg->wire_count);
+    printf("  range_end: %u\n", arg->range_end);
+    printf("  arg_count: %u\n", arg->arg_count);
+    for (unsigned int i = 0; i < arg->arg_count; ++i) {
+        printf("  args[%u]:\n", i);
+        print_CompArg(&arg->args[i]);
+    }
+    printf("}\n");
+}
 //
 // // Print EvaluationDecl
 // void print_EvalDecl(EvalDecl* eval) {

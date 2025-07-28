@@ -136,7 +136,7 @@ void TokenStackRelease(TokenStack* ts) {
 
 
 int forEachLine(const char* restrict filename, LexClosure closure) {
-    FILE * file = fopen("input_file.comb", "r");
+    FILE * file = fopen(filename, "r");
     if (!file) {
         perror("fopen");
         return 1;
@@ -261,13 +261,13 @@ int lex_line(char* line, TokenStack* stack) {
 TokenStack* lex_file(const char* file,unsigned long token_count) {
     TokenStack * tokenstack_ptr = TokenStackNew(token_count);
     LexClosure c = {.func = lex_line, .t_stack = tokenstack_ptr};
-    forEachLine("input_file.comb",c);
+    forEachLine(file,c);
     return tokenstack_ptr;
 }
 
 int test(void) {
     printf("lexing...\n");
-    TokenStack* ts = lex_file("input_file.comb", 5000000);
+    TokenStack* ts = lex_file("input_file.full.comb", 5000000);
     printf("printing...\n");
     print_tokenStack(ts);
     TokenStackRelease(ts);

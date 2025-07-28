@@ -40,8 +40,30 @@ void InstrStackRelease(InstrStack* instr_stack) {
     StackRelease(instr_stack->union_arg_in_decls);
 }
 
+void print_CompArg(CompArg* arg) {
+    if (!arg) {
+        printf("CompArg: NULL\n");
+        return;
+    }
+    printf("CompArg {\n");
+    printf("  ident: %s\n", arg->ident);
+    printf("  wire_count: %u\n", arg->wire_count);
+    printf("  range_end: %u\n", arg->range_end);
+    printf("  arg_count: %u\n", arg->arg_count);
+    for (unsigned int i = 0; i < arg->arg_count; ++i) {
+        printf("  args[%u]:\n", i);
+        print_CompArg(&arg->args[i]);
+    }
+    printf("}\n");
+}
+
+// PARSE_FUNC(EvalDecl*, parse_EvalDecl) {
+//
+// }
+
+//Stops at non-Token_Identifier
 ParsedList parse_ListCompArg(TokenStack *token_stack, InstrStack *instr_stack,
-                             unsigned int *index,TokenEnum sep_token) {
+                             unsigned int *index,TokenEnum sep_token,bool needs_wire) {
 
     ParsedList out;
     CompArg* out_data = (CompArg*) BlockStackPush(instr_stack->comp_args);
@@ -50,25 +72,34 @@ ParsedList parse_ListCompArg(TokenStack *token_stack, InstrStack *instr_stack,
     while (true) {
         TokenDiscUnion* token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
 
-        if (token->token != Token_Identifier) {
+        if (token->token == Token_CloseAngle) {
             break;
         }
+        if (token->token != Token_Identifier) {
+                perror("How did you manage to do this?");
+                exit(1);
+        }
 
-        out.count++;
         out_data->ident = (char*) token->data;
         token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+
         if (token->token != sep_token) {
-            perror("Something wrong with the separators in your component input declaration");
-            exit(1);
+            if (needs_wire && token->token != Token_CloseAngle)  {
+                perror("Something wrong with the separators in your component input declaration");
+                exit(1);
+            }
+            out_data->wire_count = 0;
+        } else {
+            token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+            if (token->token != Token_Int) {
+                perror("Something wrong with the separators in your component input declaration");
+                exit(1);
+            }
+            out_data->wire_count = *(long*)token->data;
         }
-        token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
-        if (token->token != Token_Int) {
-            perror("Something wrong with the separators in your component input declaration");
-            exit(1);
-        }
-        out_data->wire_count = *(long*)token->data;
 
         out_data = (CompArg*) BlockStackPush(instr_stack->comp_args);
+        out.count++;
     }
     return out;
 }
@@ -78,7 +109,7 @@ int main(void) {
     print_tokenStack(token_stack);
     InstrStack* instr_stack = InstrStackNew(BlockStackCount(token_stack->token_stack,true));
 
-    ParsedList out = parse_ListCompArg(token_stack, instr_stack,0,Token_Colon);
+    ParsedList out = parse_ListCompArg(token_stack, instr_stack,0,Token_Period,true);
     for (int i = 0;i<out.count;i++) {
         print_CompArg(out.data);
     }

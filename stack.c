@@ -27,6 +27,9 @@ Stack* BlockStackNew(size_t stack_size, size_t obj_size) {
 
 void* BlockStackAdvanceIndPtr(Stack* stack, unsigned int *index) {
 	void* data = BlockStackGetIndPtr(stack, *index);
+	if (data == stack->stack_ptr) {
+		return NULL;
+	}
 	(*index)++;
 	return data;
 }

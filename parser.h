@@ -106,5 +106,4 @@ PARSE_FUNC(ParsedList, parseListCompArg);
 PARSE_FUNC(CompDecl*,parseCompDecl);
 PARSE_FUNC(EvalDecl*,parseEval);
 void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out);
-
-#endif 
+#endif

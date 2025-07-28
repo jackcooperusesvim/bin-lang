@@ -4,20 +4,22 @@ ID //Some (a->z only) string
 VALUE //Some (a->z only) string
 NOTE: wherever there is a space, you may add an arbirary amount of space. Also, an asterisk represents repition, with optional and unlimited separating space and no delimiters unless specified by a declaration (e.g. ARG)
 
-DECL | EVAL | "print"
+CompDecl | EvalDecl | "print"
 
 # Declarations and Evaluations
-DECL = "comp" ID "<" *ARG">" "{" *DECL *EVAL"}"
+TopLevelInstruction = "comp" ID "<" *ComponentArgument">" "{" *DECL *EVAL"}"
+			     ^
 
-EVAL = ID "<" * UNION_ARG_IN ">"
+EvalDecl = ID "<" * UnionArgIn ">"
+           ^
 
-UNION_ARG_IN = (EVAL | VALUE | ARG_REFERENCE)
+	  ArgIn_Eval ArgIn_Value  ArgIn_ArgReference
+DiscUnionArgin = (EVAL | VALUE | ARG_REFERENCE) //Also
 
-ARG_REFERENCE = ID | (ID "." WIRECOUNT)
+ARG_REFERENCE (CompArg) = ID | (ID "." WIRECOUNT)
 
 VALUE = "T" | "F"
 
-*ARG = FUNC_ARG | ARG "," ARG "," ... ARG | VARARG
-FUNC_ARG = "comp" ID "<" *ARG">" "{" WIRECOUNT "}"
-ARG = ID:WIRECOUNT | NADA
-VARARG = ID | NADA
+*ComponentArgument = ARG ARG ... ARG
+
+ARG = ID:WIRECOUNT

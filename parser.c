@@ -1,7 +1,9 @@
 #include "parser.h"
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include "lexer.h"
 #include "stack.h"
 
@@ -19,7 +21,7 @@ InstrStack* InstrStackNew(size_t token_count) {
 	instr_stack->comp_decls = BlockStackNew(cnt,sizeof(CompDecl));
 	instr_stack->comp_args = BlockStackNew(cnt,sizeof(CompArg));
 	instr_stack->evals = BlockStackNew(cnt,sizeof(Eval));
-	instr_stack->union_arg_in_decls = BlockStackNew(cnt,sizeof(UnionArgIn));
+	instr_stack->union_arg_in_decls = BlockStackNew(cnt,sizeof(DiscUnionArgIn));
 
 	return instr_stack;
 }
@@ -31,16 +33,15 @@ void InstrStackRelease(InstrStack* instr_stack) {
     StackRelease(instr_stack->union_arg_in_decls);
 }
 
-ParsedSingle parseEval(TokenStack* token_stack, InstrStack* instr_stack, unsigned int index);
 
-const TokenEnum CompDeclExpTokenLists[][3] = {
-    {Token_Identifier,Token_OpenAngle,Token_Nada},
-    {Token_CloseAngle,Token_Equals,Token_OpenCurly},
-    {Token_CloseCurly,Token_Semicolon,Token_Nada}
-};
-
+void* token_take_and_advance(TokenStack* token_stack, unsigned int* index, TokenEnum match_token) {
+    TokenDiscUnion* tok_ptr= BlockStackGetIndPtr(token_stack->token_stack, *index);
+    if (tok_ptr->token == match_token) {
+	return tok_ptr->data;
+    } else {return NULL;}
+}
 // on failure, index is set to the index where it failed
-bool confirm_tokens(TokenStack* token_stack, unsigned int* index, int token_cnt, TokenEnum *tokens) {
+bool tokens_match(TokenStack* token_stack, unsigned int* index, int token_cnt, TokenEnum *tokens) {
     Stack* w_token_stack = token_stack->token_stack;
     TokenDiscUnion* current_token = BlockStackGetIndPtr(w_token_stack, *index);
     if (current_token == NULL)  {
@@ -50,9 +51,7 @@ bool confirm_tokens(TokenStack* token_stack, unsigned int* index, int token_cnt,
 
     void* end_ptr = w_token_stack->stack_ptr;
     for (int i=0;i<token_cnt;i++) {
-	bool reset = false;
 	if (current_token == end_ptr) {
-	    reset = true;
 	    if (w_token_stack->next== NULL) {perror("Not enough data");exit(1);}
 	    w_token_stack = w_token_stack->next;
 	    current_token = w_token_stack->data;
@@ -60,77 +59,222 @@ bool confirm_tokens(TokenStack* token_stack, unsigned int* index, int token_cnt,
 	}
 
 	if (current_token->token != tokens[i] ) {
-	    *index = i;
+	    *index += i;
 	    PrintTokenDiscUnion(current_token);
 	    return false;
 	}
 
 	current_token = current_token+1;
     }
+    *index+=token_cnt;
     return true;
 }
 
-// ParsedSingle parseCompDecl(TokenStack* token_stack, InstrStack* instr_stack, unsigned int index) {
-//     TokenDiscUnion* working_token = StackGetUniform(token_stack->token_stack, sizeof(TokenDiscUnion),index);
-//     CompDecl* out_data = BlockStackPush(instr_stack->instructions);
-//     ParsedSingle out;
-//     out.data = (void*) out_data;
-//
-//     while (working_token->token != Token_Semicolon) {
-//     }
-// }
+//UNFINISHED PARSING FUNCTIONS
+PARSE_FUNC(ParsedList,parseListEval) {
 
-// ParsedSingle parseTopLevel(TokenStack* token_stack, InstrStack* instr_stack, unsigned int index) {
-//
-//     TokenDiscUnion* first_token = StackGetUniform(token_stack->token_stack,sizeof(TokenDiscUnion),index);
-//     TopLvlInstrDiscUnion* out_data = BlockStackPush(instr_stack->instructions);
-//     ParsedSingle out;
-//     out.data = (void*) out_data;
-//
-//     switch (first_token->token) {
-// 	case Token_Keyword : {
-// 	    switch (*(KeywordEnum*) first_token->data) {
-// 		case Keyword_Comp : {
-// 		    out_data->type = Instr_Comp;
-// 		    // ParsedSingle comp_decl = parseCompDecl(token_stack,instr_stack,index+1);
-// 		    // out_data->instr = (InstrPtr) (CompDecl*) comp_decl.data;
-// 		    // out.next_index = comp_decl.next_index;
-// 		    break;
-// 		}
-// 		case Keyword_Print : {
-// 		    out_data->type = Instr_Print;
-// 		    out.next_index = index+1;
-// 		    break;
-// 		}
-// 		default: {
-// 		    perror("Wrong keyword. Expecting 'comp', 'print', or an evaluation");
-// 		    PrintTokenDiscUnion(first_token);
-// 		    exit(1);
-// 		}
-// 	    }
-// 	    break;
-// 	}
-// 	case Token_Identifier : {
-// 	    out_data->type = Instr_Eval;
-// 	    ParsedSingle eval = parseEval(token_stack,instr_stack,index);
-// 	    out.next_index = eval.next_index;
-// 	    out_data->instr = (InstrPtr) (Eval*) eval.data;
-// 	}
-//     }
-//     return out;
-// }
+}
+PARSE_FUNC(ParsedList,parseListCompDecl) {
+    ParsedList out;
+    while (true) {
+	 KeywordEnum* data_ptr = (KeywordEnum*) token_take_and_advance(token_stack, index, Token_Keyword);
+	if (data_ptr == Keyword_Comp) {
+	    parseCompDecl(token_stack, instr_stack, index);
+	} else {break;}
+    }
+}
+
+void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out) {
+
+    if (!tokens_match(token_stack, index, 2, (TokenEnum[]){Token_Identifier,Token_OpenAngle} )) {
+	perror("Bad syntax on function argument declaration");
+	exit(1);
+    }
+
+    out->ident = (char*) ((TokenDiscUnion*)BlockStackGetIndPtr(token_stack->token_stack, *index-2))->data;
+
+    ParsedList comp_args = parseListCompArg(token_stack,instr_stack,index);
+
+    out->arg_count = comp_args.count;
+    out->args = (CompArg*) comp_args.data;
+
+    //compargs instead of garbage
+    if (!tokens_match(token_stack, index, 2, (TokenEnum[]){Token_CloseAngle,Token_OpenCurly} )) {
+	perror("BAD 1");
+	exit(1);
+    }
+
+    TokenDiscUnion* maybe_wire_count = (TokenDiscUnion*)BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+    if (maybe_wire_count->token == Token_Int) {
+	out->wire_count = (unsigned int) *(long*)maybe_wire_count->data;
+	(*index)++;
+	tokens_match(token_stack, index, 1, (TokenEnum[]){Token_CloseCurly});
+    } else if (maybe_wire_count->token == Token_CloseCurly){
+	out->wire_count = 0;
+	(*index)++;
+    } else {
+	perror("unexpected token found while parsing functional function argument");
+	exit(1);
+    }
+
+    tokens_match(token_stack, index, 1, (TokenEnum[]){Token_Comma});
+}
+
+PARSE_FUNC(ParsedList,parseListCompArg) {
+    ParsedList out;
+    CompArg* out_data = (CompArg*) BlockStackPush(instr_stack->comp_args);
+    out.data = out_data;
+    unsigned int arg_count;
+    TokenDiscUnion* first_token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+
+    bool variadic_encountered;
+    bool done_with_funcs;
+
+    while (true) {
+	switch(first_token->token) {
+	    case Token_Keyword : {
+		arg_count++;
+		if ( (*(KeywordEnum*) first_token->data) != Keyword_Comp ) {
+			    perror("comp is the only keyword which can be entered during argument declaration");
+			    exit(1);
+		}
+		parseFuncCompArg( token_stack,  instr_stack, index, out_data);
+	    }
+	    case Token_Identifier: {
+		arg_count++;
+		if (variadic_encountered) {
+		    perror("variadic inputs must always come last");
+		    exit(1);
+		}
+		out_data->ident = (char*) first_token->data;
+
+		//Try for a defined-size input
+		if (tokens_match(token_stack, index, 1, (TokenEnum[]){Token_Colon})) {
+
+		    TokenDiscUnion* token = BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+		    if (token->token == Token_Int) {
+			out_data->wire_count = *(long*)token->data;
+		    } else {
+			perror("a declaration of a variable input must either be variadic (and last) or have a wire count after a colon");
+			exit(1);
+		    }
+		    tokens_match(token_stack, index, 1, (TokenEnum[]){Token_Comma});
+		} else {
+		}
+
+	    }
+	    case Token_CloseAngle: {
+		arg_count--;
+		out.count = arg_count;
+		return out;
+	    }
+	    default: {
+		perror("Something wrong with the separators in your component input declaration");
+		exit(1);
+	    }
+
+	}
+	out_data = BlockStackPush(instr_stack->comp_args);
+    }
+}
+
+void throwaway(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index, TokenEnum opener, TokenEnum closer) {
+    TokenDiscUnion* current_ptr;
+    int open_close_state = 1;
+    while (true) {
+	current_ptr = (TokenDiscUnion*) BlockStackAdvanceIndPtr(token_stack->token_stack, index);
+	PrintTokenDiscUnion(current_ptr);
+	if (current_ptr->token == closer) {
+	    open_close_state-=1;
+	} else if (current_ptr->token == opener) {
+	    open_close_state+=1;
+	}
+
+	if (open_close_state == 0) {return;}
+    }
+}
+
+
+PARSE_FUNC(CompDecl*,parseCompDecl) {
+    CompDecl* out = BlockStackPush(instr_stack->instructions);
+
+    if (!tokens_match(token_stack, index, 2, (TokenEnum[]){Token_Identifier,Token_OpenAngle} )) {
+	perror("BAD 1");
+	exit(1);
+    }
+    out->ident = (char*)((TokenDiscUnion*)BlockStackAdvanceIndPtr(token_stack->token_stack, index))->data;
+
+    ParsedList comp_args = parseListCompArg(token_stack,instr_stack,index);
+
+    out->arg_count = comp_args.count;
+    out->args = (CompArg*) comp_args.data;
+
+    //compargs instead of garbage
+    if (!tokens_match(token_stack, index, 2, (TokenEnum[]){Token_CloseAngle,Token_OpenCurly} )) {
+	perror("BAD 1");
+	exit(1);
+    }
+
+    ParsedList comp_decls = parseListCompDecl(token_stack,instr_stack,index);
+    ParsedList evals = parseListEval(token_stack,instr_stack,index);
+
+    out->sub_decl_count = comp_decls.count;
+    out->sub_decls = (CompDecl*) evals.data;
+
+    out->eval_count = evals.count;
+    out->evals = (Eval*) evals.data;
+
+    if (!tokens_match(token_stack, index, 1, (TokenEnum[]){Token_CloseCurly} )) {
+	perror("Component declaration must end with a '}' ");
+	exit(1);
+    }
+
+    return out;
+}
+
+PARSE_FUNC(TopLvlInstrDiscUnion*,parseTopLevel) {
+
+    TokenDiscUnion* first_token = BlockStackGetIndPtr(token_stack->token_stack,*index);
+    TopLvlInstrDiscUnion* out = BlockStackPush(instr_stack->instructions);
+
+    switch (first_token->token) {
+	case Token_Keyword : {
+	    (*index)++;
+	    switch (*(KeywordEnum*) first_token->data) {
+		case Keyword_Comp : {
+		    out->type = Instr_Comp;
+		    CompDecl* comp_decl = parseCompDecl(token_stack,instr_stack,index);
+		    out->instr = (InstrPtr) comp_decl;
+		    break;
+		}
+		case Keyword_Print : {
+		    out->type = Instr_Print;
+		    break;
+		}
+		default: {
+		    perror("Wrong keyword. Expecting 'comp', 'print', or an evaluation");
+		    PrintTokenDiscUnion(first_token);
+		    exit(1);
+		}
+	    }
+	    break;
+	}
+	case Token_Identifier : {
+	    out->type = Instr_Eval;
+	    Eval* eval = parseEval(token_stack,instr_stack,index);
+	    out->instr = (InstrPtr) (Eval*) eval;
+	}
+    }
+    return out;
+}
 
 int main(void) {
 
     TokenStack* token_stack = lex_file("input_file.comb", 50000);
-    print_tokenStack(token_stack);
+    // print_tokenStack(token_stack);
+    InstrStack* instr_stack = InstrStackNew(BlockStackCount(token_stack->token_stack,true));
 
-    unsigned int index = 0;
-    bool confirmation = confirm_tokens(token_stack, &index, 3, (TokenEnum[]){Token_Keyword,Token_Identifier,Token_OpenAngle});
-
-    printf("%i\n",confirmation);
-
-    InstrStack* instr_stack = InstrStackNew(StackCountUniform(token_stack->token_stack,true));
+    parseTopLevel(token_stack, instr_stack, 0);
 
     TokenStackRelease(token_stack);
 

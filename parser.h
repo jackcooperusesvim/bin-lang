@@ -7,9 +7,9 @@
 #include "lexer.h"
 #include "stack.h"
 
+typedef struct ArgumentInDiscriminatedUnion DiscUnionArgIn;
 typedef unsigned short ArgInEnum;
 typedef unsigned char InstrEnum;
-typedef union ArgumentIn UnionArgIn;
 typedef struct ComponentDeclaration CompDecl;
 
 #define Instr_Comp 0
@@ -19,33 +19,40 @@ typedef struct ComponentDeclaration CompDecl;
 #define ArgIn_Eval 0
 #define ArgIn_ArgReference 1
 #define ArgIn_ArgValue 2
+ 
+#define PARSE_FUNC(ret_type, name) ret_type name(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index)
 
 //wire_count of 0 means variadic
 typedef struct ComponentArgument {
-	char* identifier;
+	char* ident;
 	unsigned int wire_count;
+	
+	//For function arguments
+	unsigned int arg_count;
+	struct ComponentArgument* args;
 } CompArg;
 
 typedef struct Evaluation {
 	char* component_identifier;
 
 	unsigned int arg_count;
-	ArgInEnum arg_types;
-	UnionArgIn* args;
+	DiscUnionArgIn* args;
 
-	struct Evaluation* next;
 } Eval;
 
 //is_print discriminates between a print statment (which contains no more data
 typedef struct ComponentDeclaration {
-	char* component_identifier;
+	char* ident;
 
 	unsigned int arg_count;
 	CompArg* args;
 
+	unsigned int sub_decl_count;
 	CompDecl* sub_decls;
 
-	Eval* eval_decls;
+	unsigned int eval_count;
+	Eval* evals;
+
 } CompDecl;
 
 typedef union InstructionPtr {
@@ -59,12 +66,16 @@ typedef struct TopLevelInstruction {
 	InstrPtr instr;
 } TopLvlInstrDiscUnion;
 
-//In case I want to store each type separately, I am NOT putting these in a discunion
 typedef union ArgumentIn {
 	CompArg* comp_arg;
 	Eval* eval;
 	bool raw_value;
 } UnionArgIn;
+
+typedef struct ArgumentInDiscriminatedUnion {
+	ArgInEnum type;
+	UnionArgIn data;
+} DiscUnionArgIn;
 
 typedef struct InstructionStack {
 	Stack* instructions; //TopLvlInstrDiscUnion
@@ -76,15 +87,9 @@ typedef struct InstructionStack {
 } InstrStack;
 
 typedef struct ParsedList {
-    unsigned int next_index;
     unsigned int count;
     void* data;
 } ParsedList;
-
-typedef struct ParsedSingle{
-    unsigned int next_index;
-    void* data;
-} ParsedSingle;
 
 InstrStack* InstrStackNew(size_t token_count);
 void InstrStackRelease(InstrStack* instr_stack);
@@ -95,5 +100,9 @@ typedef struct ParseClosure{
     InstrStack* t_stack;
 } ParseClosure;
 
+PARSE_FUNC(ParsedList, parseListCompArg);
+PARSE_FUNC(TopLvlInstrDiscUnion*,parseTopLevel);
+PARSE_FUNC(CompDecl*,parseCompDecl);
+void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out);
 
 #endif 

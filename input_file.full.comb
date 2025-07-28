@@ -1,19 +1,28 @@
-comp Nand<x> = { Not<And<x>> };
+comp Nand<x>{ Not<And<x>> }
 
-comp Enc<i:4> = {
-	Or<i.2.3>,
-	Or<i.1,And<Not<i.2>,i.1>>,
+comp Enc<i:4>{
+	Or<i.2.3>
+	Or<i.1,And<Not<i.2>,i.1>>
 	Or<i>
-};
+}
 
-comp Dec<x:2,e> = {
-	comp ne = {Not<e>};
-	comp nx = {Not<x>};
+comp Dec<x:2,e>{
+	comp ne {Not<e>}
+	comp nx {Not<x>}
 
 	Nand<ne,nx>,
-	Nand<ne, nx.1, x.0>,
-	Nand<ne, x.1, nx.0>,
-	Nand<ne>,
-};
+	Nand<ne, nx.1, x.0>
+	Nand<ne, x.1, nx.0>
+	Nand<ne>
+}
+comp Dec<x:2,e>{
+	comp ne {Not<e>}
+	comp nx {Not<x>}
+
+	Nand<ne,nx>
+	Nand<ne, nx.1, x.0>
+	Nand<ne, x.1, nx.0>
+	Nand<ne>
+}
 
 Dec<T,F,T>

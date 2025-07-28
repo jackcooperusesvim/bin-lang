@@ -29,6 +29,8 @@ Stack* BlockStackNew(size_t stack_size, size_t obj_size);
 void* BlockStackPush(Stack* stack);
 int BlockStackPop(Stack* stack);
 void* BlockStackGetIndPtr(Stack* stack, unsigned int index);
+void* BlockStackAdvanceIndPtr(Stack* stack, unsigned int *index);
 unsigned int BlockStackSpaceDataAfter(Stack* stack, void* start);
 void* StackEndPtr(Stack* stack, void* start);
+unsigned long BlockStackCount(Stack* stack, bool recursive);
 #endif

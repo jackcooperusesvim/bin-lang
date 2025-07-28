@@ -7,9 +7,9 @@ NOTE: wherever there is a space, you may add an arbirary amount of space. Also, 
 DECL | EVAL | "print"
 
 # Declarations and Evaluations
-DECL = "comp" ID "<" *ARG">" "=" "{" *DECL *EVAL"}" ";"
+DECL = "comp" ID "<" *ARG">" "{" *DECL *EVAL"}"
 
-EVAL = ID "<" * UNION_ARG_IN ">" ","
+EVAL = ID "<" * UNION_ARG_IN ">"
 
 UNION_ARG_IN = (EVAL | VALUE | ARG_REFERENCE)
 

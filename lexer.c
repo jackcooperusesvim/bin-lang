@@ -271,4 +271,6 @@ int test(void) {
     printf("printing...\n");
     print_tokenStack(ts);
     TokenStackRelease(ts);
+    return 1;
 }
+

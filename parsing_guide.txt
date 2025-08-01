@@ -4,7 +4,7 @@ ID //Some (a->z only) string
 VALUE //Some (a->z only) string
 NOTE: wherever there is a space, you may add an arbirary amount of space. Also, an asterisk represents repition, with optional and unlimited separating space and no delimiters unless specified by a declaration (e.g. ARG)
 
-CompDecl | EvalDecl | "print"
+CompDecl | EvalDecl
 
 # Declarations and Evaluations
 TopLevelInstruction = "comp" ID "<" *ComponentArgument">" "{" *DECL *EVAL"}"

@@ -13,14 +13,18 @@ typedef unsigned char InstrEnum;
 typedef struct ComponentDeclaration CompDecl;
 
 #define Instr_Comp 0
-#define Instr_Eval 1
-#define Instr_Print 2
+#define Instr_Binding 1
 
-#define ArgIn_Eval 0
+#define ArgIn_Binding 0
 #define ArgIn_ArgReference 1
 #define ArgIn_ArgValue 2
  
-#define PARSE_FUNC(ret_type, name) ret_type name(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index)
+#define PARSE_FUNC_DEF(ret_type, name) ret_type parse_##name(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index, Stack* parsing_lifetime_stack)
+#define PARSE_FUNC(name) parse_##name( token_stack,  instr_stack, index, parsing_lifetime_stack)
+
+#define MATCH_TOKENS(tokens...) tokens_match(token_stack,*index,(TokenEnum[]){tokens})
+#define PARSE_TOKENS(tokens...) parse_tokens(token_stack,index,(TokenEnum[]){tokens},parsing_lifetime_stack)
+#define POP_PARSING_STACK(num_tokens) StackPop(parsing_lifetime_stack,num_tokens*sizeof(void**))
 
 //wire_count of 0 means variadic
 typedef struct ComponentArgument {
@@ -29,8 +33,8 @@ typedef struct ComponentArgument {
 	unsigned int range_end;
 	
 	//For function arguments
-	unsigned int arg_count;
-	struct ComponentArgument* args;
+	unsigned int func_arg_count;
+	//function arg args are next in the stack
 } CompArg;
 
 typedef struct EvaluationDecl {
@@ -39,7 +43,7 @@ typedef struct EvaluationDecl {
 	unsigned int arg_count;
 	DiscUnionArgIn* args;
 
-} EvalDecl;
+} Binding;
 
 //is_print discriminates between a print statment (which contains no more data
 typedef struct ComponentDeclaration {
@@ -49,16 +53,16 @@ typedef struct ComponentDeclaration {
 	CompArg* args;
 
 	unsigned int sub_decl_count;
-	CompDecl* sub_decls;
+	//sub_decls are next in the stack
 
-	unsigned int eval_count;
-	EvalDecl* evals;
+	unsigned int binding_count;
+	Binding* bindings;
 
 } CompDecl;
 
 typedef union InstructionPtr {
 	CompDecl* comp_arg;
-	EvalDecl* eval;
+	Binding* eval;
 } InstrPtr;
 
 //instr can be 
@@ -68,8 +72,8 @@ typedef struct TopLevelInstruction {
 } TopLvlInstrDiscUnion;
 
 typedef union ArgumentIn {
-	CompArg* comp_arg;
-	EvalDecl* eval;
+	char* comp_arg_ident;
+	Binding* eval;
 	bool raw_value;
 } UnionArgIn;
 
@@ -82,7 +86,7 @@ typedef struct InstructionStack {
 	Stack* instructions; //TopLvlInstrDiscUnion
 	Stack* comp_decls; //CompDecl
 	Stack* comp_args; //CompArg
-	Stack* evals; //Eval
+	Stack* bindings; //CompBinding
 	Stack* union_arg_in_decls; //UnionArgIn
 
 } InstrStack;
@@ -101,9 +105,9 @@ typedef struct ParseClosure{
     InstrStack* t_stack;
 } ParseClosure;
 
-PARSE_FUNC(void,parseTopLevel);
-PARSE_FUNC(ParsedList, parseListCompArg);
-PARSE_FUNC(CompDecl*,parseCompDecl);
-PARSE_FUNC(EvalDecl*,parseEval);
+PARSE_FUNC_DEF(void,TopLevel);
+PARSE_FUNC_DEF(ParsedList, ListCompArg);
+PARSE_FUNC_DEF(Binding*,Eval);
+PARSE_FUNC_DEF(CompDecl*,CompDecl);
 void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out);
 #endif

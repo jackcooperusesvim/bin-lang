@@ -9,7 +9,7 @@
 
 // Forward declarations
 void print_CompArg(CompArg* arg);
-void print_EvalDecl(EvalDecl* eval);
+void print_EvalDecl(Binding* eval);
 void print_CompDecl(CompDecl* comp);
 void print_DiscUnionArgIn(DiscUnionArgIn* argin);
 void print_TopLvlInstrDiscUnion(TopLvlInstrDiscUnion* top);
@@ -27,7 +27,7 @@ InstrStack* InstrStackNew(size_t token_count) {
 	instr_stack->instructions = BlockStackNew(cnt,sizeof(TopLvlInstrDiscUnion));
 	instr_stack->comp_decls = BlockStackNew(cnt,sizeof(CompDecl));
 	instr_stack->comp_args = BlockStackNew(cnt,sizeof(CompArg));
-	instr_stack->evals = BlockStackNew(cnt,sizeof(EvalDecl));
+	instr_stack->bindings = BlockStackNew(cnt,sizeof(Binding));
 	instr_stack->union_arg_in_decls = BlockStackNew(cnt,sizeof(DiscUnionArgIn));
 
 	return instr_stack;
@@ -36,7 +36,7 @@ void InstrStackRelease(InstrStack* instr_stack) {
     StackRelease(instr_stack->instructions);
     StackRelease(instr_stack->comp_decls);
     StackRelease(instr_stack->comp_args);
-    StackRelease(instr_stack->evals);
+    StackRelease(instr_stack->bindings);
     StackRelease(instr_stack->union_arg_in_decls);
 }
 
@@ -49,8 +49,8 @@ void print_CompArg(CompArg* arg) {
     printf("  ident: %s\n", arg->ident);
     printf("  wire_count: %u\n", arg->wire_count);
     printf("  range_end: %u\n", arg->range_end);
-    printf("  arg_count: %u\n", arg->arg_count);
-    for (unsigned int i = 0; i < arg->arg_count; ++i) {
+    printf("  arg_count: %u\n", arg->func_arg_count);
+    for (unsigned int i = 0; i < arg->func_arg_count; ++i) {
         printf("  args[%u]:\n", i);
         print_CompArg(&arg->args[i]);
     }

@@ -41,8 +41,10 @@ typedef struct EvaluationDecl {
 	char* ident;
 
 	unsigned int arg_count;
-	DiscUnionArgIn* args;
-
+	// DiscUnion
+	ArgInEnum type;
+	// Binding OR (if the type is boolean) NULL for false, anything else for true
+	void* data;
 } Binding;
 
 //is_print discriminates between a print statment (which contains no more data
@@ -71,23 +73,13 @@ typedef struct TopLevelInstruction {
 	InstrPtr instr;
 } TopLvlInstrDiscUnion;
 
-typedef union ArgumentIn {
-	char* comp_arg_ident;
-	Binding* eval;
-	bool raw_value;
-} UnionArgIn;
 
-typedef struct ArgumentInDiscriminatedUnion {
-	ArgInEnum type;
-	UnionArgIn data;
-} DiscUnionArgIn;
 
 typedef struct InstructionStack {
 	Stack* instructions; //TopLvlInstrDiscUnion
 	Stack* comp_decls; //CompDecl
 	Stack* comp_args; //CompArg
 	Stack* bindings; //CompBinding
-	Stack* union_arg_in_decls; //UnionArgIn
 
 } InstrStack;
 
@@ -108,6 +100,10 @@ typedef struct ParseClosure{
 PARSE_FUNC_DEF(void,TopLevel);
 PARSE_FUNC_DEF(ParsedList, ListCompArg);
 PARSE_FUNC_DEF(Binding*,Eval);
+PARSE_FUNC_DEF(CompArg*,DefArgs);
 PARSE_FUNC_DEF(CompDecl*,CompDecl);
 void parseFuncCompArg(TokenStack* token_stack, InstrStack* instr_stack, unsigned int *index,CompArg* out);
+Binding *raw_parse_Binding(TokenStack *token_stack, InstrStack *instr_stack,
+                       unsigned int *index, Stack *parsing_lifetime_stack, bool top_level);
+PARSE_FUNC_DEF(CompArg*,DefArg);
 #endif

@@ -6,6 +6,8 @@ Stack* StackNew(size_t stack_size) {
 	Stack* stack_ptr = (Stack*) malloc(sizeof(Stack));
 	void * data = malloc(stack_size);
 
+	stack_ptr->opt_obj_size = 0;
+
 	stack_ptr->size_remaining = stack_size;
 	stack_ptr->next = NULL;
 	stack_ptr->data = data;
